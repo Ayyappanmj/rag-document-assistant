@@ -1,0 +1,217 @@
+[
+  {
+    "id": "q01",
+    "type": "factual",
+    "question": "Where is Northwind Analytics headquartered?",
+    "ground_truth": "Northwind Analytics is headquartered in Pune, India.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q02",
+    "type": "factual",
+    "question": "In what year was the company founded?",
+    "ground_truth": "The company was founded in 2012.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q03",
+    "type": "factual",
+    "question": "How many employees did the company have as of 31 March 2025?",
+    "ground_truth": "1,842 employees.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q04",
+    "type": "numerical",
+    "question": "What was the revenue in FY2025?",
+    "ground_truth": "Revenue for FY2025 was USD 84.6 million.",
+    "expected_sources": [
+      "Annual_Report.pdf",
+      "Financial_Statement.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q05",
+    "type": "numerical",
+    "question": "By what percentage did revenue grow in FY2025?",
+    "ground_truth": "Revenue grew by 18 percent.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q06",
+    "type": "numerical",
+    "question": "What was the net profit in FY2025?",
+    "ground_truth": "Net profit for FY2025 was USD 12.3 million.",
+    "expected_sources": [
+      "Annual_Report.pdf",
+      "Financial_Statement.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q07",
+    "type": "factual",
+    "question": "What were the major revenue sources?",
+    "ground_truth": "Cloud subscriptions (58 percent), professional services (27 percent) and licence fees (15 percent).",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q08",
+    "type": "numerical",
+    "question": "What share of revenue came from North America?",
+    "ground_truth": "46 percent of revenue came from North America.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q09",
+    "type": "multi_hop",
+    "question": "Which region generated the most revenue, and roughly how much is that in USD given total revenue?",
+    "ground_truth": "North America generated the most, 46 percent of USD 84.6 million, which is about USD 38.9 million.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q10",
+    "type": "multi_hop",
+    "question": "How many days of annual leave can an employee carry forward, and what is the most annual leave they could have available in the following year?",
+    "ground_truth": "Up to 5 days can be carried forward, so at most 29 days (24 plus 5).",
+    "expected_sources": [
+      "Company_Policy.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q11",
+    "type": "multi_hop",
+    "question": "What was the gross profit in FY2025, and how does it relate to revenue and cost of revenue?",
+    "ground_truth": "Gross profit was USD 53.4 million, which is revenue of 84.6 minus cost of revenue of 31.2.",
+    "expected_sources": [
+      "Financial_Statement.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q12",
+    "type": "comparison",
+    "question": "Compare the revenue figures mentioned in the annual report and the financial statement.",
+    "ground_truth": "Both documents report FY2025 revenue of USD 84.6 million, so the figures are consistent.",
+    "expected_sources": [
+      "Annual_Report.pdf",
+      "Financial_Statement.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q13",
+    "type": "comparison",
+    "question": "How does FY2025 net profit compare with FY2024?",
+    "ground_truth": "Net profit rose from USD 9.8 million in FY2024 to USD 12.3 million in FY2025.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q14",
+    "type": "comparison",
+    "question": "Which contributed more to revenue, cloud subscriptions or professional services?",
+    "ground_truth": "Cloud subscriptions contributed more, 58 percent versus 27 percent for professional services.",
+    "expected_sources": [
+      "Annual_Report.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q15",
+    "type": "factual",
+    "question": "How many days per week can employees work remotely?",
+    "ground_truth": "Employees may work remotely up to 3 days per week with manager approval.",
+    "expected_sources": [
+      "Company_Policy.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q16",
+    "type": "numerical",
+    "question": "How soon must a security incident be reported?",
+    "ground_truth": "Within 24 hours of discovery.",
+    "expected_sources": [
+      "Company_Policy.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q17",
+    "type": "numerical",
+    "question": "What is the minimum password length required?",
+    "ground_truth": "Passwords must be at least 14 characters long.",
+    "expected_sources": [
+      "Company_Policy.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q18",
+    "type": "numerical",
+    "question": "What were the cash and cash equivalents on 31 March 2025?",
+    "ground_truth": "USD 41.2 million.",
+    "expected_sources": [
+      "Financial_Statement.pdf"
+    ],
+    "answerable": true
+  },
+  {
+    "id": "q19",
+    "type": "unanswerable",
+    "question": "Who is the chief executive officer of Northwind Analytics?",
+    "ground_truth": "The documents do not say who the CEO is.",
+    "expected_sources": [],
+    "answerable": false
+  },
+  {
+    "id": "q20",
+    "type": "unanswerable",
+    "question": "What was the company's revenue in FY2019?",
+    "ground_truth": "The documents do not contain FY2019 revenue.",
+    "expected_sources": [],
+    "answerable": false
+  },
+  {
+    "id": "q21",
+    "type": "unanswerable",
+    "question": "What is the company's stock ticker symbol?",
+    "ground_truth": "The documents do not mention a ticker symbol.",
+    "expected_sources": [],
+    "answerable": false
+  },
+  {
+    "id": "q22",
+    "type": "unanswerable",
+    "question": "How many patents does the company hold?",
+    "ground_truth": "The documents do not mention patents.",
+    "expected_sources": [],
+    "answerable": false
+  }
+]

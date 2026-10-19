@@ -1,0 +1,19 @@
+# Phase 1 dependencies (more are added in later phases)
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+python-multipart>=0.0.9
+sqlalchemy>=2.0
+pymupdf>=1.24
+langchain-text-splitters>=0.3
+numpy>=1.26
+faiss-cpu>=1.8
+sentence-transformers>=3.0
+rank-bm25>=0.2.2
+httpx>=0.27
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+pytesseract>=0.3.10

@@ -1,0 +1,88 @@
+# Start everything:        docker compose up --build
+# Include Ollama as well:  docker compose --profile ollama up --build
+# Settings are read from a file named .env next to this one (copy .env.example to .env).
+name: rag-document-assistant
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        # Set INSTALL_CHROMA=true in .env to include the optional Chroma vector database
+        INSTALL_CHROMA: ${INSTALL_CHROMA:-false}
+    ports:
+      # BACKEND_BIND=127.0.0.1 (set in .env on a public server) keeps the port private so only the HTTPS proxy can reach it
+      - "${BACKEND_BIND:-0.0.0.0}:8000:8000"
+    environment:
+      ENVIRONMENT: production
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DATABASE_URL: sqlite:////app/data/rag.db        # four slashes = absolute path, inside the data volume
+      EVALUATION_DIR: /evaluation
+      # --- language model ---
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      # Ollama running on your computer. Using the bundled container instead? set DOCKER_OLLAMA_URL=http://ollama:11434
+      OLLAMA_BASE_URL: ${DOCKER_OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-120}
+      # --- retrieval ---
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      CHUNK_SIZE: ${CHUNK_SIZE:-800}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-150}
+      VECTOR_STORE: ${VECTOR_STORE:-faiss}
+      TOP_K: ${TOP_K:-5}
+      DENSE_WEIGHT: ${DENSE_WEIGHT:-0.7}
+      BM25_WEIGHT: ${BM25_WEIGHT:-0.3}
+      RETRIEVAL_THRESHOLD: ${RETRIEVAL_THRESHOLD:-0.35}
+      # --- safety ---
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-25}
+      GROUNDING_SUPPORT_THRESHOLD: ${GROUNDING_SUPPORT_THRESHOLD:-0.5}
+      GROUNDING_MIN_FAITHFULNESS: ${GROUNDING_MIN_FAITHFULNESS:-0.8}
+      BLOCK_UNGROUNDED: ${BLOCK_UNGROUNDED:-false}
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret}
+    volumes:
+      - rag_data:/app/data          # uploads, FAISS index, SQLite database
+      - eval_data:/evaluation       # evaluation questions, sample PDFs and results.json
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # lets Linux reach Ollama on the host (Docker Desktop does this itself)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Opened by your browser, so keep it a host address (not http://backend:8000)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_GITHUB_URL: ${NEXT_PUBLIC_GITHUB_URL:-https://github.com/your-username/rag-document-assistant}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional: run Ollama in a container too (no GPU). Only starts with:  docker compose --profile ollama up
+  # Afterwards download a model once:  docker compose exec ollama ollama pull llama3.2
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  rag_data:
+  eval_data:
+  ollama_data:

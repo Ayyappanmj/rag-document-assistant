@@ -1,0 +1,5 @@
+# Caddy gets and renews a free HTTPS certificate automatically, then forwards requests to the backend container.
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy backend:8000
+}

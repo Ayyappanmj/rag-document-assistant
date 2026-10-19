@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+!.env.local.example
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.db
+backend/data/uploads/*
+backend/data/indexes/*
+!backend/data/uploads/.gitkeep
+!backend/data/indexes/.gitkeep
+node_modules/
+.next/
+.vercel/
+.DS_Store
+
+# Test and coverage output
+.coverage
+htmlcov/
+coverage.xml

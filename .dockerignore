@@ -1,0 +1,16 @@
+# Used when building the backend image from the project root
+.git
+.github
+.env
+.env.*
+!.env.example
+frontend
+backend/.venv
+backend/data
+backend/rag.db
+backend/tests
+backend/.pytest_cache
+**/__pycache__
+**/*.pyc
+**/node_modules
+evaluation/results.json
