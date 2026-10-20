@@ -1,9 +1,15 @@
 """Embedding service: wraps Sentence Transformers with lazy loading, batching and a query cache."""
+import gc
 import logging
+import os
 import threading
 from collections import OrderedDict
 
 import numpy as np
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +19,7 @@ QUERY_CACHE_SIZE = 256
 class EmbeddingService:
     """Produces L2-normalised vectors, so inner product == cosine similarity."""
 
-    def __init__(self, model_name: str, batch_size: int = 32):
+    def __init__(self, model_name: str, batch_size: int = 8):
         self.model_name = model_name
         self.batch_size = batch_size
         self._model = None
@@ -23,10 +29,18 @@ class EmbeddingService:
     def _load(self):
         with self._lock:
             if self._model is None:
+                try:
+                    import torch
+                    torch.set_num_threads(1)
+                    if hasattr(torch, "set_num_interop_threads"):
+                        torch.set_num_interop_threads(1)
+                except Exception:
+                    pass
+
                 from sentence_transformers import SentenceTransformer  # heavy import, keep lazy
 
                 logger.info("embedding_model_loading model=%s", self.model_name)
-                self._model = SentenceTransformer(self.model_name)
+                self._model = SentenceTransformer(self.model_name, device="cpu")
         return self._model
 
     @property
@@ -37,13 +51,17 @@ class EmbeddingService:
         """Batch-embed many texts. Returns float32 array of shape (n, dim)."""
         if not texts:
             return np.empty((0, 0), dtype="float32")
-        vectors = self._load().encode(
-            texts,
-            batch_size=self.batch_size,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-            show_progress_bar=False,
-        )
+        import torch
+
+        with torch.inference_mode():
+            vectors = self._load().encode(
+                texts,
+                batch_size=self.batch_size,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            )
+        gc.collect()
         return np.asarray(vectors, dtype="float32")
 
     def embed_query(self, query: str) -> np.ndarray:

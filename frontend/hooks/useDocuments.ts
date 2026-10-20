@@ -16,10 +16,13 @@ export function useDocuments() {
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      setDocuments(await listDocuments());
+      const docs = await listDocuments();
+      setDocuments(docs);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      if (!silent) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -32,7 +35,7 @@ export function useDocuments() {
   const hasActive = documents.some((d) => IN_PROGRESS.has(d.status));
   useEffect(() => {
     if (!hasActive) return;
-    const timer = setInterval(() => void refresh(true), 2000);
+    const timer = setInterval(() => void refresh(true), 4000);
     return () => clearInterval(timer);
   }, [hasActive, refresh]);
 

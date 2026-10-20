@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 800
     chunk_overlap: int = 150
-    embedding_batch_size: int = 32
+    embedding_batch_size: int = 8
     vector_store: str = "faiss"  # "faiss" or "chroma" (needs requirements-chroma.txt)
     candidate_pool: int = 20
     max_context_chars: int = 6000
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
 
     # Re-ranking configuration
-    reranker_enabled: bool = True
+    reranker_enabled: bool = False
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # OCR configuration
