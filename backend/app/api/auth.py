@@ -19,46 +19,64 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(body: UserRegister, db: Session = Depends(get_db)):
-    existing = db.scalar(select(User).where(User.email == body.email))
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A user with this email already exists.",
+    try:
+        existing = db.scalar(select(User).where(User.email == body.email))
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A user with this email already exists.",
+            )
+        user = User(
+            email=body.email,
+            hashed_password=get_password_hash(body.password),
         )
-    user = User(
-        email=body.email,
-        hashed_password=get_password_hash(body.password),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
-    token = create_access_token(data={"sub": user.id, "email": user.email})
-    logger.info("user_registered id=%s email=%s", user.id, user.email)
-    return TokenResponse(
-        access_token=token,
-        token_type="bearer",
-        user=UserOut.model_validate(user),
-    )
+        token = create_access_token(data={"sub": user.id, "email": user.email})
+        logger.info("user_registered id=%s email=%s", user.id, user.email)
+        return TokenResponse(
+            access_token=token,
+            token_type="bearer",
+            user=UserOut.model_validate(user),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("user_registration_failed error=%s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}",
+        )
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: UserLogin, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == body.email))
-    if not user or not verify_password(body.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    try:
+        user = db.scalar(select(User).where(User.email == body.email))
+        if not user or not verify_password(body.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    token = create_access_token(data={"sub": user.id, "email": user.email})
-    logger.info("user_logged_in id=%s email=%s", user.id, user.email)
-    return TokenResponse(
-        access_token=token,
-        token_type="bearer",
-        user=UserOut.model_validate(user),
-    )
+        token = create_access_token(data={"sub": user.id, "email": user.email})
+        logger.info("user_logged_in id=%s email=%s", user.id, user.email)
+        return TokenResponse(
+            access_token=token,
+            token_type="bearer",
+            user=UserOut.model_validate(user),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("user_login_failed error=%s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}",
+        )
 
 
 @router.get("/me", response_model=UserOut)
