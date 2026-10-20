@@ -39,7 +39,9 @@ export function useEvaluationRun(onFinished: () => void) {
 
   const start = useCallback(async (limit?: number) => {
     try {
-      setStatus(await startEvaluation(limit));
+      await startEvaluation(limit);
+      const next = await getEvaluationStatus();
+      setStatus(next);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start the evaluation");
     }

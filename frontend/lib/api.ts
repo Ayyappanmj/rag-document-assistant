@@ -220,11 +220,13 @@ export const deleteConversation = (id: string) =>
 export const getEvaluationMetrics = () => request<EvaluationMetrics>("/api/evaluation/metrics");
 export const getEvaluationStatus = () => request<EvaluationStatus>("/api/evaluation/status");
 export const getEvaluationResults = () => request<EvaluationResults>("/api/evaluation/results");
-export const startEvaluation = (body: { limit?: number; top_k?: number } = {}) =>
-  request<void>("/api/evaluation/run", {
+export const startEvaluation = (body: { limit?: number; top_k?: number } | number = {}) => {
+  const payload = typeof body === "number" ? { limit: body } : body;
+  return request<EvaluationStatus>("/api/evaluate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
   });
+};
 export const getVectorBenchmark = () => request<VectorBenchmark>("/api/evaluation/benchmark");
 export const getVectorStoreComparison = () => request<VectorBenchmark>("/api/evaluation/vector-stores");
