@@ -30,9 +30,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+allowed_origins = [
+    "https://rag-document-assistant-frontend-7ksx.onrender.com",
+    "http://localhost:3000",
+]
+for origin in settings.cors_origin_list:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
