@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 from app.api import auth, chat, conversations, dashboard, documents, evaluation, search
 from app.config import get_settings
 from app.core.logging import setup_logging
-from app.models.database import init_db
+from app.models.database import SessionLocal, init_db
+from app.services.document_service import recover_stale_documents
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -19,13 +20,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()  # create tables if missing
+    try:
+        with SessionLocal() as db:
+            recovered = recover_stale_documents(db, force_all=True)
+            if recovered:
+                logger.info("startup_stale_documents_recovered count=%d", recovered)
+    except Exception as exc:
+        logger.warning("startup_stale_recovery_failed err=%s", exc)
     logger.info("database_ready url_scheme=%s", settings.database_url.split(":")[0])
     yield
 
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.12.2",
+    version="0.12.3",
     description="Production-grade RAG document assistant API.",
     lifespan=lifespan,
 )
@@ -69,5 +77,5 @@ def health() -> dict:
         "app": settings.app_name,
         "environment": settings.environment,
         "llm_provider": settings.llm_provider,
-        "version": "0.12.2",
+        "version": "0.12.3",
     }

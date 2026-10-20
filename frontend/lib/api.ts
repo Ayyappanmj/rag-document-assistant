@@ -94,6 +94,8 @@ export const getConfig = () => request<AppConfig>("/api/config");
 export const getDashboardStats = () => request<DashboardStats>("/api/dashboard/stats");
 export const listDocuments = () => request<DocumentRecord[]>("/api/documents");
 export const deleteDocument = (id: string) => request<void>(`/api/documents/${id}`, { method: "DELETE" });
+export const retryDocument = (id: string) =>
+  request<DocumentRecord>(`/api/documents/${id}/retry`, { method: "POST" });
 export const getChunks = (id: string, page?: number, limit = 50) => {
   const params = new URLSearchParams({ limit: String(limit) });
   if (page) params.set("page", String(page));

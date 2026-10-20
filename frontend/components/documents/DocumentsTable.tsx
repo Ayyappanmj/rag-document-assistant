@@ -1,4 +1,4 @@
-import { Eye, MessageSquare, Trash2 } from "lucide-react";
+import { Eye, MessageSquare, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,9 +12,10 @@ interface Props {
   documents: DocumentRecord[];
   onView: (doc: DocumentRecord) => void;
   onDelete: (doc: DocumentRecord) => void;
+  onRetry?: (doc: DocumentRecord) => void;
 }
 
-export function DocumentsTable({ documents, onView, onDelete }: Props) {
+export function DocumentsTable({ documents, onView, onDelete, onRetry }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
       <Table>
@@ -64,8 +65,19 @@ export function DocumentsTable({ documents, onView, onDelete }: Props) {
                         <MessageSquare className="size-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" aria-label={`Delete ${doc.name}`} onClick={() => onDelete(doc)}>
-                      <Trash2 className="size-4 text-red-400" />
+                    {doc.status === "failed" && onRetry && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Retry indexing"
+                        aria-label={`Retry ${doc.name}`}
+                        onClick={() => onRetry(doc)}
+                      >
+                        <RotateCcw className="size-4 text-amber-400 hover:text-amber-300" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" aria-label={`Delete ${doc.name}`} title="Delete document" onClick={() => onDelete(doc)}>
+                      <Trash2 className="size-4 text-red-400 hover:text-red-300" />
                     </Button>
                   </div>
                 </TableCell>

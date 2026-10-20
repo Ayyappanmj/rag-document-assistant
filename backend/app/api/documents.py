@@ -12,7 +12,7 @@ from app.core.security import get_optional_current_user
 from app.models.database import Document, DocumentChunk, User, get_db, get_session_factory
 from app.models.schemas import ChunkOut, DocumentOut
 from app.rag import dependencies as deps
-from app.services.document_service import process_document
+from app.services.document_service import process_document, recover_stale_documents
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/documents", tags=["documents"])
@@ -78,10 +78,42 @@ def list_documents(
     current_user: User | None = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    recover_stale_documents(db, force_all=False)
     query = select(Document)
     if current_user:
         query = query.where(Document.user_id == current_user.id)
     return db.scalars(query.order_by(Document.created_at.desc())).all()
+
+
+@router.post("/{document_id}/retry", response_model=DocumentOut)
+def retry_document(
+    document_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: User | None = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+    session_factory: sessionmaker = Depends(get_session_factory),
+):
+    doc = db.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
+    if current_user and doc.user_id and doc.user_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorized to retry this document.")
+
+    settings = get_settings()
+    file_path = Path(settings.upload_dir) / doc.stored_filename
+    if not file_path.exists():
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Original uploaded file is no longer available on the server. Please re-upload.",
+        )
+
+    doc.status = "processing"
+    doc.error_message = None
+    db.commit()
+    db.refresh(doc)
+    background_tasks.add_task(process_document, doc.id, session_factory)
+    logger.info("document_retry_started id=%s", doc.id)
+    return doc
 
 
 @router.get("/{document_id}", response_model=DocumentOut)

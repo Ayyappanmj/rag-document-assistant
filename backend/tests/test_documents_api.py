@@ -41,3 +41,31 @@ def test_list_get_delete(client):
 
 def test_get_missing_document(client):
     assert client.get("/api/documents/nope").status_code == 404
+
+
+def test_retry_document(client):
+    doc_id = _upload(client).json()["id"]
+    r = client.post(f"/api/documents/{doc_id}/retry")
+    assert r.status_code == 200
+    assert r.json()["status"] == "processing"
+
+
+def test_recover_stale_documents_marks_abandoned_jobs_failed(client):
+    from app.main import app
+    from app.models.database import Document, get_session_factory
+    from app.services.document_service import recover_stale_documents
+
+    doc_id = _upload(client).json()["id"]
+    Session = app.dependency_overrides[get_session_factory]()
+    with Session() as db:
+        doc = db.get(Document, doc_id)
+        assert doc is not None
+        doc.status = "embedding"
+        db.commit()
+
+        recovered = recover_stale_documents(db, force_all=True)
+        assert recovered >= 1
+
+        doc = db.get(Document, doc_id)
+        assert doc.status == "failed"
+        assert "interrupted by server restart" in doc.error_message

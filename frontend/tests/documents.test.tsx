@@ -69,4 +69,13 @@ describe("DocumentsTable", () => {
     fireEvent.click(deleteButton);
     expect(onDelete).toHaveBeenCalledWith(mockDocs[0]);
   });
+
+  it("triggers onRetry callback for failed documents", () => {
+    const onRetry = vi.fn();
+    render(<DocumentsTable documents={mockDocs} onView={vi.fn()} onDelete={vi.fn()} onRetry={onRetry} />);
+
+    const retryButton = screen.getByRole("button", { name: "Retry financials.pdf" });
+    fireEvent.click(retryButton);
+    expect(onRetry).toHaveBeenCalledWith(mockDocs[1]);
+  });
 });

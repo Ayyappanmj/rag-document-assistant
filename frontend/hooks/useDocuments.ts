@@ -5,9 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import { listDocuments } from "@/lib/api";
 import type { DocumentRecord, DocumentStatus } from "@/types";
 
-const IN_PROGRESS: ReadonlySet<DocumentStatus> = new Set(["uploading", "processing", "embedding", "indexed"]);
+const IN_PROGRESS: ReadonlySet<DocumentStatus> = new Set(["uploading", "processing", "embedding"]);
 
-/** Loads documents and keeps polling every 2s while any of them is still being processed. */
+/** Loads documents and polls while any document is in an active non-terminal status. */
 export function useDocuments() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(true);

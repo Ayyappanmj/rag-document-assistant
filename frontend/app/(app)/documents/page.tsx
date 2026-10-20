@@ -13,7 +13,7 @@ import { UploadDropzone } from "@/components/documents/UploadDropzone";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/useApi";
 import { useDocuments } from "@/hooks/useDocuments";
-import { deleteDocument, getConfig } from "@/lib/api";
+import { deleteDocument, getConfig, retryDocument } from "@/lib/api";
 import type { DocumentRecord } from "@/types";
 
 const DEFAULT_MAX_MB = 25;
@@ -31,6 +31,16 @@ export default function DocumentsPage() {
       await refresh(true);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not delete the document");
+    }
+  }
+
+  async function handleRetry(doc: DocumentRecord) {
+    try {
+      await retryDocument(doc.id);
+      toast.success(`Retrying indexing for "${doc.name}"...`);
+      await refresh(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not retry indexing");
     }
   }
 
@@ -53,7 +63,12 @@ export default function DocumentsPage() {
           />
         )}
         {documents.length > 0 && (
-          <DocumentsTable documents={documents} onView={setViewing} onDelete={handleDelete} />
+          <DocumentsTable
+            documents={documents}
+            onView={setViewing}
+            onDelete={handleDelete}
+            onRetry={handleRetry}
+          />
         )}
       </div>
       <DocumentViewer document={viewing} onClose={() => setViewing(null)} />

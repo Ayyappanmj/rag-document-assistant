@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 120.0
     llm_temperature: float = 0.1
 
+    embedding_provider: str = "local"  # "local" | "openai" | "ollama"
+    embedding_api_key: str = ""        # optional override; defaults to openai_api_key
+    embedding_base_url: str = ""       # optional override; defaults to openai_base_url or ollama_base_url
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 800
     chunk_overlap: int = 150

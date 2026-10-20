@@ -16,7 +16,15 @@ from app.rag.vector_types import VectorIndex
 @lru_cache
 def get_embedding_service() -> EmbeddingService:
     s = get_settings()
-    return EmbeddingService(s.embedding_model, s.embedding_batch_size)
+    api_key = s.embedding_api_key or s.openai_api_key
+    base_url = s.embedding_base_url or (s.openai_base_url if s.embedding_provider == "openai" else s.ollama_base_url)
+    return EmbeddingService(
+        model_name=s.embedding_model,
+        batch_size=s.embedding_batch_size,
+        provider=s.embedding_provider,
+        api_key=api_key,
+        base_url=base_url,
+    )
 
 
 @lru_cache
