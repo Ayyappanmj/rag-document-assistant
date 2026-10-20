@@ -141,6 +141,14 @@ class Evaluation(Base):
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    if settings.database_url.startswith("sqlite"):
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            for table in ["documents", "conversations"]:
+                try:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN user_id VARCHAR(32) REFERENCES users(id) ON DELETE SET NULL"))
+                except Exception:
+                    pass
 
 
 def get_db() -> Iterator[Session]:
