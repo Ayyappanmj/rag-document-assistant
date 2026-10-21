@@ -51,6 +51,11 @@ class EmbeddingService:
                 self.model_name = model_name
             if not self.base_url:
                 self.base_url = "https://api.openai.com/v1"
+        elif self.provider in ("gemini", "google"):
+            if "sentence-transformers" in model_name or not model_name:
+                self.model_name = "text-embedding-004"
+            else:
+                self.model_name = model_name
         elif self.provider == "ollama":
             if "sentence-transformers" in model_name or not model_name:
                 self.model_name = "nomic-embed-text"
@@ -58,6 +63,11 @@ class EmbeddingService:
                 self.model_name = model_name
             if not self.base_url:
                 self.base_url = "http://localhost:11434"
+        elif self.provider == "fastembed":
+            if "sentence-transformers" in model_name or not model_name:
+                self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
+            else:
+                self.model_name = model_name
         else:
             self.model_name = model_name
 
@@ -82,6 +92,12 @@ class EmbeddingService:
     def dimension(self) -> int:
         if self._dimension is not None:
             return self._dimension
+        if self.provider in ("gemini", "google") and "text-embedding-004" in self.model_name:
+            self._dimension = 768
+            return self._dimension
+        if self.provider == "openai" and "text-embedding-3-small" in self.model_name:
+            self._dimension = 1536
+            return self._dimension
         if self.provider == "local":
             model = self._model if self._model is not None else self._load_local_model()
             if hasattr(model, "get_sentence_embedding_dimension"):
@@ -97,8 +113,12 @@ class EmbeddingService:
             return np.empty((0, 0), dtype="float32")
         if self.provider == "openai":
             return self._embed_openai(texts)
+        elif self.provider in ("gemini", "google"):
+            return self._embed_gemini(texts)
         elif self.provider == "ollama":
             return self._embed_ollama(texts)
+        elif self.provider == "fastembed":
+            return self._embed_fastembed(texts)
         else:
             return self._embed_local(texts)
 
@@ -116,6 +136,52 @@ class EmbeddingService:
             )
         gc.collect()
         return np.asarray(vectors, dtype="float32")
+
+    def _embed_gemini(self, texts: list[str]) -> np.ndarray:
+        all_vectors = []
+        batch_size = max(1, min(self.batch_size, 32))
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:batchEmbedContents?key={self.api_key}"
+        with httpx.Client(timeout=60.0) as client:
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i : i + batch_size]
+                requests = [
+                    {
+                        "model": f"models/{self.model_name}",
+                        "content": {"parts": [{"text": t}]},
+                    }
+                    for t in batch
+                ]
+                resp = client.post(url, json={"requests": requests})
+                resp.raise_for_status()
+                data = resp.json()
+                for item in data.get("embeddings", []):
+                    vec = np.asarray(item["values"], dtype="float32")
+                    norm = np.linalg.norm(vec)
+                    if norm > 0:
+                        vec = vec / norm
+                    all_vectors.append(vec)
+        return np.vstack(all_vectors)
+
+    def _embed_fastembed(self, texts: list[str]) -> np.ndarray:
+        try:
+            from fastembed import TextEmbedding
+        except ImportError as exc:
+            raise RuntimeError(
+                "EMBEDDING_PROVIDER=fastembed requires fastembed. Run: pip install fastembed"
+            ) from exc
+
+        with self._lock:
+            if self._model is None:
+                self._model = TextEmbedding(model_name=self.model_name)
+        embeddings = list(self._model.embed(texts, batch_size=self.batch_size))
+        all_vectors = []
+        for emb in embeddings:
+            vec = np.asarray(emb, dtype="float32")
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm
+            all_vectors.append(vec)
+        return np.vstack(all_vectors)
 
     def _embed_openai(self, texts: list[str]) -> np.ndarray:
         all_vectors = []

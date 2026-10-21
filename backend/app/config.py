@@ -25,11 +25,12 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: str = ""  # backend-only; never sent to the frontend
     openai_model: str = "gpt-4o-mini"
+    gemini_api_key: str = ""
     llm_timeout_seconds: float = 120.0
     llm_temperature: float = 0.1
 
-    embedding_provider: str = "local"  # "local" | "openai" | "ollama"
-    embedding_api_key: str = ""        # optional override; defaults to openai_api_key
+    embedding_provider: str = "local"  # "local" | "openai" | "ollama" | "gemini" | "fastembed"
+    embedding_api_key: str = ""        # optional override; defaults to openai_api_key or gemini_api_key
     embedding_base_url: str = ""       # optional override; defaults to openai_base_url or ollama_base_url
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: int = 800
