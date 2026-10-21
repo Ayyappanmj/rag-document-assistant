@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""  # backend-only; never sent to the frontend
     openai_model: str = "gpt-4o-mini"
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-1.5-flash"
     llm_timeout_seconds: float = 120.0
     llm_temperature: float = 0.1
 

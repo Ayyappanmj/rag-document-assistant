@@ -1,4 +1,5 @@
 """Shared singletons (model + index are expensive, so create them once)."""
+import os
 from functools import lru_cache
 
 from app.config import get_settings
@@ -16,12 +17,22 @@ from app.rag.vector_types import VectorIndex
 @lru_cache
 def get_embedding_service() -> EmbeddingService:
     s = get_settings()
-    api_key = s.embedding_api_key or (s.gemini_api_key if s.embedding_provider in ("gemini", "google") else s.openai_api_key)
-    base_url = s.embedding_base_url or (s.openai_base_url if s.embedding_provider == "openai" else s.ollama_base_url)
+    gemini_key = s.gemini_api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    openai_key = s.openai_api_key or os.getenv("OPENAI_API_KEY") or ""
+
+    provider = s.embedding_provider.lower().strip()
+    if provider == "local":
+        if gemini_key:
+            provider = "gemini"
+        elif openai_key or s.embedding_api_key:
+            provider = "openai"
+
+    api_key = s.embedding_api_key or (gemini_key if provider in ("gemini", "google") else openai_key)
+    base_url = s.embedding_base_url or (s.openai_base_url if provider == "openai" else s.ollama_base_url)
     return EmbeddingService(
         model_name=s.embedding_model,
         batch_size=s.embedding_batch_size,
-        provider=s.embedding_provider,
+        provider=provider,
         api_key=api_key,
         base_url=base_url,
     )

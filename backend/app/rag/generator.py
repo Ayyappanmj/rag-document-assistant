@@ -1,6 +1,7 @@
 """LLM clients (Ollama by default, any OpenAI-compatible API optionally) and the Generator."""
 import json
 import logging
+import os
 from collections.abc import Iterator
 from typing import Protocol
 
@@ -137,14 +138,31 @@ class OpenAICompatibleClient:
 
 
 def create_llm_client(settings: Settings) -> LLMClient:
-    provider = settings.llm_provider.lower()
+    gemini_key = settings.gemini_api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    openai_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY") or ""
+
+    provider = settings.llm_provider.lower().strip()
+    if provider == "ollama":
+        if gemini_key:
+            provider = "gemini"
+        elif openai_key:
+            provider = "openai"
+
     if provider == "ollama":
         return OllamaClient(settings.ollama_base_url, settings.ollama_model,
                             settings.llm_temperature, settings.llm_timeout_seconds)
     if provider == "openai":
-        return OpenAICompatibleClient(settings.openai_base_url, settings.openai_model, settings.openai_api_key,
+        return OpenAICompatibleClient(settings.openai_base_url, settings.openai_model, openai_key,
                                       settings.llm_temperature, settings.llm_timeout_seconds)
-    raise ValueError(f"Unsupported LLM_PROVIDER: {settings.llm_provider!r} (use 'ollama' or 'openai')")
+    if provider in ("gemini", "google"):
+        return OpenAICompatibleClient(
+            "https://generativelanguage.googleapis.com/v1beta/openai",
+            getattr(settings, "gemini_model", "gemini-1.5-flash"),
+            gemini_key,
+            settings.llm_temperature,
+            settings.llm_timeout_seconds,
+        )
+    raise ValueError(f"Unsupported LLM_PROVIDER: {settings.llm_provider!r} (use 'ollama', 'openai', or 'gemini')")
 
 
 class Generator:

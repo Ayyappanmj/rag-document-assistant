@@ -81,7 +81,9 @@ def list_documents(
     recover_stale_documents(db, force_all=False)
     query = select(Document)
     if current_user:
-        query = query.where(Document.user_id == current_user.id)
+        query = query.where((Document.user_id == current_user.id) | (Document.user_id.is_(None)))
+    else:
+        query = query.where(Document.user_id.is_(None))
     return db.scalars(query.order_by(Document.created_at.desc())).all()
 
 
@@ -122,10 +124,13 @@ def get_document(
     current_user: User | None = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ):
+    recover_stale_documents(db, force_all=False)
     doc = db.get(Document, document_id)
     if not doc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     if current_user and doc.user_id and doc.user_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
+    if not current_user and doc.user_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     return doc
 
@@ -143,6 +148,8 @@ def list_chunks(
     if not doc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     if current_user and doc.user_id and doc.user_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
+    if not current_user and doc.user_id is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     query = select(DocumentChunk).where(DocumentChunk.document_id == document_id)
     if page is not None:

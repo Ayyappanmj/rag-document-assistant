@@ -74,6 +74,16 @@ class EmbeddingService:
     def _load_local_model(self):
         with self._lock:
             if self._model is None:
+                # If fastembed is installed, prefer it for local embeddings to avoid PyTorch OOM
+                try:
+                    from fastembed import TextEmbedding
+                    logger.info("embedding_fastembed_loading model=%s", self.model_name)
+                    self._model = TextEmbedding(model_name=self.model_name)
+                    self._is_fastembed = True
+                    return self._model
+                except Exception:
+                    self._is_fastembed = False
+
                 try:
                     import torch
                     torch.set_num_threads(1)
@@ -86,6 +96,7 @@ class EmbeddingService:
 
                 logger.info("embedding_model_loading model=%s", self.model_name)
                 self._model = SentenceTransformer(self.model_name, device="cpu")
+                self._is_fastembed = False
         return self._model
 
     @property
@@ -123,9 +134,20 @@ class EmbeddingService:
             return self._embed_local(texts)
 
     def _embed_local(self, texts: list[str]) -> np.ndarray:
+        model = self._model if self._model is not None else self._load_local_model()
+        if getattr(self, "_is_fastembed", False):
+            embeddings = list(model.embed(texts, batch_size=self.batch_size))
+            all_vectors = []
+            for emb in embeddings:
+                vec = np.asarray(emb, dtype="float32")
+                norm = np.linalg.norm(vec)
+                if norm > 0:
+                    vec = vec / norm
+                all_vectors.append(vec)
+            return np.vstack(all_vectors)
+
         import torch
 
-        model = self._model if self._model is not None else self._load_local_model()
         with torch.inference_mode():
             vectors = model.encode(
                 texts,
@@ -140,13 +162,14 @@ class EmbeddingService:
     def _embed_gemini(self, texts: list[str]) -> np.ndarray:
         all_vectors = []
         batch_size = max(1, min(self.batch_size, 32))
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:batchEmbedContents?key={self.api_key}"
+        clean_model = self.model_name.replace("models/", "")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}:batchEmbedContents?key={self.api_key}"
         with httpx.Client(timeout=60.0) as client:
             for i in range(0, len(texts), batch_size):
                 batch = texts[i : i + batch_size]
                 requests = [
                     {
-                        "model": f"models/{self.model_name}",
+                        "model": f"models/{clean_model}",
                         "content": {"parts": [{"text": t}]},
                     }
                     for t in batch

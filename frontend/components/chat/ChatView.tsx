@@ -28,6 +28,13 @@ export function ChatView() {
   const { documents, loading: docsLoading } = useDocuments();
   const readyDocs = useMemo(() => documents.filter((d) => d.status === "ready"), [documents]);
   const [selected, setSelected] = useState<string[]>(() => (docParam ? [docParam] : []));
+
+  useEffect(() => {
+    if (docParam) {
+      setSelected([docParam]);
+    }
+  }, [docParam]);
+
   const activeDocIds = useMemo(
     () => selected.filter((id) => readyDocs.some((d) => d.id === id)),
     [selected, readyDocs],

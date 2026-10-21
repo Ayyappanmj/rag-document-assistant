@@ -23,13 +23,22 @@ def _resolve_user_documents(
     current_user: User | None,
     db: Session,
 ) -> list[str] | None:
-    if not current_user:
-        return requested_ids
-    user_docs = db.scalars(select(Document.id).where(Document.user_id == current_user.id)).all()
+    if current_user:
+        user_docs = set(
+            db.scalars(
+                select(Document.id).where(
+                    (Document.user_id == current_user.id) | (Document.user_id.is_(None))
+                )
+            ).all()
+        )
+    else:
+        user_docs = set(
+            db.scalars(select(Document.id).where(Document.user_id.is_(None))).all()
+        )
     if requested_ids is not None:
         valid_ids = [doc_id for doc_id in requested_ids if doc_id in user_docs]
         return valid_ids if valid_ids else ["__none__"]
-    return user_docs if user_docs else ["__none__"]
+    return list(user_docs) if user_docs else ["__none__"]
 
 
 @router.post("", response_model=ChatResponse)
